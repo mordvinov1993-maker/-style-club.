@@ -1,5 +1,4 @@
 import sqlite3
-import random
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -35,6 +34,7 @@ def create_database():
             price INTEGER
         )
     """)
+
     cursor.execute("SELECT COUNT(*) FROM gifts")
     gifts_count = cursor.fetchone()[0]
 
@@ -47,7 +47,7 @@ def create_database():
                 ("Сертификат на 500 ₽", 500)
             ]
         )
-    
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS wheel_spins (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,8 +58,10 @@ def create_database():
             UNIQUE(telegram_id, spin_date)
         )
     """)
+
     conn.commit()
     conn.close()
+
 
 def register_user(telegram_id, username, first_name):
     conn = sqlite3.connect("style_club.db")
@@ -75,9 +77,7 @@ def register_user(telegram_id, username, first_name):
         WHERE telegram_id = ? AND title = ?
     """, (telegram_id, "Первый шаг"))
 
-    achievement_exists = cursor.fetchone()
-
-    if not achievement_exists:
+    if not cursor.fetchone():
         cursor.execute("""
             INSERT INTO achievements (telegram_id, title)
             VALUES (?, ?)
@@ -85,7 +85,8 @@ def register_user(telegram_id, username, first_name):
 
     conn.commit()
     conn.close()
-      
+
+
 def get_user(telegram_id):
     conn = sqlite3.connect("style_club.db")
     cursor = conn.cursor()
@@ -99,6 +100,7 @@ def get_user(telegram_id):
     conn.close()
 
     return user
+
 
 def get_achievements(telegram_id):
     conn = sqlite3.connect("style_club.db")
@@ -114,6 +116,7 @@ def get_achievements(telegram_id):
 
     return achievements
 
+
 def add_points(telegram_id, points):
     conn = sqlite3.connect("style_club.db")
     cursor = conn.cursor()
@@ -125,6 +128,8 @@ def add_points(telegram_id, points):
 
     conn.commit()
     conn.close()
+
+
 def get_gifts():
     conn = sqlite3.connect("style_club.db")
     cursor = conn.cursor()
@@ -177,7 +182,13 @@ def redeem_gift(telegram_id, gift_id):
 
     return "success", title
 
-def spin_wheel(telegram_id):
+
+def spin_wheel(telegram_id, prize, is_admin=False):
+    allowed_prizes = [0, 5, 10, 25, 50, 100]
+
+    if prize not in allowed_prizes:
+        return "invalid_prize", None
+
     conn = sqlite3.connect("style_club.db")
     cursor = conn.cursor()
 
@@ -198,23 +209,32 @@ def spin_wheel(telegram_id):
         conn.close()
         return "no_user", None
 
-    cursor.execute(
-        "SELECT id FROM wheel_spins WHERE telegram_id = ? AND spin_date = ?",
-        (telegram_id, today)
-    )
+    # Администратор может вращать колесо без ограничений
+    if not is_admin:
 
-    if cursor.fetchone():
-        conn.rollback()
-        conn.close()
-        return "already_spun", None
+        cursor.execute(
+            """
+            SELECT id FROM wheel_spins
+            WHERE telegram_id = ? AND spin_date = ?
+            """,
+            (telegram_id, today)
+        )
 
-    prize = random.choice([0, 5, 10, 25, 50, 100])
+        if cursor.fetchone():
+            conn.rollback()
+            conn.close()
+            return "already_spun", None
 
-    cursor.execute(
-        "INSERT INTO wheel_spins (telegram_id, spin_date, prize) VALUES (?, ?, ?)",
-        (telegram_id, today, prize)
-    )
+        cursor.execute(
+            """
+            INSERT INTO wheel_spins
+            (telegram_id, spin_date, prize)
+            VALUES (?, ?, ?)
+            """,
+            (telegram_id, today, prize)
+        )
 
+    # Начисляем именно тот приз, который выпал на колесе
     cursor.execute(
         "UPDATE users SET points = points + ? WHERE telegram_id = ?",
         (prize, telegram_id)
