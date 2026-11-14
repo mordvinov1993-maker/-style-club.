@@ -164,10 +164,14 @@
 
             // Рассчитываем угол остановки выбранного сектора
             const sectorCenter = prizeIndex * 60 + 30;
-            const targetAngle = (360 - sectorCenter) % 360;
+const targetAngle = (360 - sectorCenter) % 360;
 
-            // Пять полных оборотов и точная остановка
-            rotation += 1800 + targetAngle;
+const currentAngle = rotation % 360;
+const delta = (targetAngle - currentAngle + 360) % 360;
+
+rotation += 1800 + delta;
+
+            
 
             wheel.style.transform = `rotate(${rotation}deg)`;
 
