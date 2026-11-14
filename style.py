@@ -9,7 +9,8 @@ from aiogram.types import (
     KeyboardButton,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
-    CallbackQuery
+    CallbackQuery,
+    WebAppInfo
 )
 from dotenv import load_dotenv
 
@@ -25,10 +26,13 @@ from database import (
 )
 
 load_dotenv()
+
 ADMIN_ID = 900544895
 
 bot = Bot(token=os.getenv("TELEGRAM_BOT_TOKEN"))
 dp = Dispatcher()
+
+# Главная клавиатура
 main_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [
@@ -38,16 +42,30 @@ main_keyboard = ReplyKeyboardMarkup(
         [
             KeyboardButton(text="🏆 Достижения"),
             KeyboardButton(text="🎁 Подарки")
+        ],
+        [
+            KeyboardButton(
+                text="🎡 Колесо Фортуны",
+                web_app=WebAppInfo(
+                    url="https://mordvinov1993-maker.github.io/-style-club./wheel_game/"
+                )
+            )
         ]
     ],
     resize_keyboard=True,
     one_time_keyboard=False
 )
+
+
+# Мой Telegram ID
 @dp.message(F.text == "/myid")
 async def show_my_id(message: Message):
     await message.answer(
         f"Твой Telegram ID: {message.from_user.id}"
     )
+
+
+# Старт
 @dp.message(CommandStart())
 async def start(message: Message):
 
@@ -60,16 +78,19 @@ async def start(message: Message):
     )
 
     await message.answer(
-    "👋 Добро пожаловать в STYLE CLUB!\n\n"
-    "Твоя регистрация прошла успешно.\n\n"
-    "Здесь ты можешь зарабатывать баллы, "
-    "открывать достижения и получать подарки.\n\n"
-    "Добро пожаловать в клуб! 🎁",
-    reply_markup=main_keyboard
-)
+        "👋 Добро пожаловать в STYLE CLUB!\n\n"
+        "Твоя регистрация прошла успешно.\n\n"
+        "Здесь ты можешь зарабатывать баллы, "
+        "открывать достижения и получать подарки.\n\n"
+        "Добро пожаловать в клуб! 🎁",
+        reply_markup=main_keyboard
+    )
 
+
+# Профиль
 @dp.message(F.text == "👤 Мой профиль")
 async def show_profile(message: Message):
+
     user = get_user(message.from_user.id)
 
     if user:
@@ -81,11 +102,15 @@ async def show_profile(message: Message):
             f"⭐ Баланс: {points} баллов"
         )
     else:
-        await message.answer("Профиль не найден. Нажми /start.")
+        await message.answer(
+            "Профиль не найден. Нажми /start."
+        )
 
 
+# Баллы
 @dp.message(F.text == "⭐ Мои баллы")
 async def show_points(message: Message):
+
     user = get_user(message.from_user.id)
 
     if user:
@@ -97,9 +122,15 @@ async def show_points(message: Message):
             f"Баллы можно будет использовать для получения подарков!"
         )
     else:
-        await message.answer("Сначала нажми /start для регистрации.")
+        await message.answer(
+            "Сначала нажми /start для регистрации."
+        )
+
+
+# Подарки
 @dp.message(F.text == "🎁 Подарки")
 async def show_gifts(message: Message):
+
     gifts = get_gifts()
 
     if not gifts:
@@ -109,6 +140,7 @@ async def show_gifts(message: Message):
     await message.answer("🎁 КАТАЛОГ ПОДАРКОВ\n")
 
     for gift_id, title, price in gifts:
+
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -124,8 +156,12 @@ async def show_gifts(message: Message):
             f"🎁 {title}\nСтоимость: {price} баллов",
             reply_markup=keyboard
         )
+
+
+# Обмен подарков
 @dp.callback_query(F.data.startswith("redeem:"))
 async def process_redeem(callback: CallbackQuery):
+
     gift_id = int(callback.data.split(":")[1])
 
     status, title = redeem_gift(
@@ -134,12 +170,14 @@ async def process_redeem(callback: CallbackQuery):
     )
 
     if status == "success":
+
         await callback.message.answer(
             f"🎉 Поздравляем!\n\n"
             f"Ты обменял баллы на подарок: {title}."
         )
 
     elif status == "not_enough":
+
         user = get_user(callback.from_user.id)
         points = user[1] if user else 0
 
@@ -149,44 +187,63 @@ async def process_redeem(callback: CallbackQuery):
         )
 
     elif status == "not_found":
-        await callback.message.answer("Этот подарок не найден.")
+        await callback.message.answer(
+            "Этот подарок не найден."
+        )
 
     elif status == "no_user":
-        await callback.message.answer("Сначала нажми /start.")
+        await callback.message.answer(
+            "Сначала нажми /start."
+        )
 
-    await callback.answer()        
+    await callback.answer()
+
+
+# Достижения
 @dp.message(F.text == "🏆 Достижения")
 async def show_achievements(message: Message):
+
     achievements = get_achievements(message.from_user.id)
 
     if achievements:
+
         text = "🏆 ТВОИ ДОСТИЖЕНИЯ\n\n"
 
         for title, earned_at in achievements:
             text += f"⭐ {title}\n"
 
         await message.answer(text)
+
     else:
+
         await message.answer(
             "🏆 У тебя пока нет достижений.\n\n"
             "Выполняй задания и участвуй в жизни STYLE CLUB — "
             "здесь будут появляться твои награды!"
-        )  
+        )
+
+
+# Начисление баллов администратором
 @dp.message(F.text.startswith("/addpoints"))
 async def admin_add_points(message: Message):
 
     if message.from_user.id != ADMIN_ID:
-        await message.answer("⛔ У тебя нет доступа к этой команде.")
+        await message.answer(
+            "⛔ У тебя нет доступа к этой команде."
+        )
         return
 
     try:
+
         parts = message.text.split()
 
         telegram_id = int(parts[1])
         points = int(parts[2])
 
         if points <= 0:
-            await message.answer("Количество баллов должно быть больше нуля.")
+            await message.answer(
+                "Количество баллов должно быть больше нуля."
+            )
             return
 
         add_points(telegram_id, points)
@@ -196,13 +253,63 @@ async def admin_add_points(message: Message):
         )
 
     except (IndexError, ValueError):
+
         await message.answer(
             "Используй команду так:\n\n"
             "/addpoints Telegram_ID количество"
-        )         
+        )
+
+
+# Получение команды от Mini App
+@dp.message(F.web_app_data)
+async def process_wheel_spin(message: Message):
+
+    data = message.web_app_data.data
+
+    if data != "spin":
+        await message.answer("Неизвестная команда.")
+        return
+
+    status, prize = spin_wheel(message.from_user.id)
+
+    if status == "success":
+
+        user = get_user(message.from_user.id)
+        points = user[1] if user else 0
+
+        await message.answer(
+            f"🎉 ПОЗДРАВЛЯЕМ!\n\n"
+            f"🎡 Тебе выпало: {prize} баллов!\n\n"
+            f"⭐ Твой новый баланс: {points} баллов."
+        )
+
+    elif status == "already_spun":
+
+        user = get_user(message.from_user.id)
+        points = user[1] if user else 0
+
+        await message.answer(
+            "🎡 Сегодня ты уже крутил колесо!\n\n"
+            f"Твой баланс: {points} баллов.\n\n"
+            "Возвращайся завтра за новой попыткой."
+        )
+
+    elif status == "no_user":
+
+        await message.answer(
+            "Сначала зарегистрируйся командой /start."
+        )
+
+
+# Запуск бота
 async def main():
+
+    create_database()
+
     print("STYLE CLUB запущен!")
+
     await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

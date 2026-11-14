@@ -144,8 +144,7 @@ button.addEventListener("click", function() {
     wheel.style.transform = `rotate(${rotation}deg)`;
 
     setTimeout(function() {
-        button.disabled = false;
-        button.textContent = "КРУТИТЬ КОЛЕСО";
+        tg.sendData("spin");
     }, 5000);
 });
 </script>
