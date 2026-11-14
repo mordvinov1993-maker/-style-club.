@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Колесо Фортуны — STYLE CLUB</title>
+    <style>
+    body {
+        margin: 0;
+        min-height: 100vh;
+        background: #10121c;
+        color: white;
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    h1 {
+        font-size: 32px;
+        margin-bottom: 12px;
+    }
+
+    p {
+        color: #a5a8b8;
+        font-size: 16px;
+    }
+.pointer {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 24px solid white;
+    z-index: 10;
+}
+.wheel-container {
+    margin-top: 35px;
+    position: relative;
+}
+
+.wheel {
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    border: 6px solid white;
+    position: relative;
+    background: conic-gradient(
+        #ff8c42 0deg 60deg,
+        #24283d 60deg 120deg,
+        #ff8c42 120deg 180deg,
+        #24283d 180deg 240deg,
+        #ff8c42 240deg 300deg,
+        #24283d 300deg 360deg
+    );
+    box-shadow: 0 0 35px rgba(255, 140, 66, 0.25);
+transition: transform 5s cubic-bezier(0.15, 0.75, 0.15, 1);}
+
+
+.sector {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+
+
+.sector:nth-child(1) {
+    transform: translate(-50%, -50%) translate(50px, -87px);
+}
+
+.sector:nth-child(2) {
+    transform: translate(-50%, -50%) translate(100px, 0);
+}
+
+.sector:nth-child(3) {
+    transform: translate(-50%, -50%) translate(50px, 87px);
+}
+
+.sector:nth-child(4) {
+    transform: translate(-50%, -50%) translate(-50px, 87px);
+}
+
+.sector:nth-child(5) {
+    transform: translate(-50%, -50%) translate(-100px, 0);
+}
+
+.sector:nth-child(6) {
+    transform: translate(-50%, -50%) translate(-50px, -87px);
+}
+#spinButton {
+    margin-top: 30px;
+    padding: 16px 40px;
+    border: none;
+    border-radius: 30px;
+    background: #ff8c42;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+    <h1>🎡 Колесо Фортуны</h1>
+    <p>Испытай удачу и получи баллы!</p>
+    <div class="wheel-container">
+        <div class="pointer"></div>
+    <div class="wheel" id="wheel">
+        <div class="sector">0</div>
+        <div class="sector">5</div>
+        <div class="sector">10</div>
+        <div class="sector">25</div>
+        <div class="sector">50</div>
+        <div class="sector">100</div>
+    </div>
+</div>
+<button id="spinButton">КРУТИТЬ КОЛЕСО</button>
+<p id="result"></p>
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+
+const wheel = document.getElementById("wheel");
+const button = document.getElementById("spinButton");
+const result = document.getElementById("result");
+
+let rotation = 0;
+
+button.addEventListener("click", function() {
+    button.disabled = true;
+    button.textContent = "КОЛЕСО КРУТИТСЯ...";
+
+    rotation += 1800 + Math.floor(Math.random() * 360);
+    wheel.style.transform = `rotate(${rotation}deg)`;
+
+    setTimeout(function() {
+        button.disabled = false;
+        button.textContent = "КРУТИТЬ КОЛЕСО";
+    }, 5000);
+});
+</script>
+</body>
+</html>
